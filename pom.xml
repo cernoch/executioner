@@ -4,8 +4,8 @@
 
   <groupId>cz.cvut.felk.ida.executioner</groupId>
   <artifactId>executioner</artifactId>
-  <version>0.1</version>
-  <name>Executioner</name>
+  <version>0.2</version>
+  <name>Executioner with timeouts</name>
   <inceptionYear>2014</inceptionYear>
   <description>Parallel execution tools and stack manipulators</description>
 

@@ -23,7 +23,6 @@
 package cz.cvut.felk.ida.executioner;
 
 import java.util.concurrent.Callable;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -133,19 +132,25 @@ public class Timeout<T> {
         
         long started = System.currentTimeMillis();
         Thread thread = new Thread(new Catcher(), threadName()); 
-        thread.start();
-
+        StackTraceElement[] snapshot;
         long elapsed;
-        do {
-            elapsed = System.currentTimeMillis() - started;
-            if (elapsed < timeOut) {
-                thread.join(timeOut - elapsed);
-            }
-        } while (thread.isAlive() && elapsed < timeOut);
+        
+        try {
+            thread.start();
 
-        // Remember, where we were a when the interrupt signal was sent...
-        StackTraceElement[] snapshot = thread.getStackTrace();
-        thread.interrupt(); // and do the interrupt.
+            do {
+                elapsed = System.currentTimeMillis() - started;
+                if (elapsed < timeOut) {
+                    thread.join(timeOut - elapsed);
+                }
+            } while (thread.isAlive() && elapsed < timeOut);
+
+            // Remember, where we were a when the interrupt signal was sent...
+            snapshot = thread.getStackTrace();
+            
+        } finally {
+            thread.interrupt(); // and do the interrupt.
+        }
 
         if (elapsed >= timeOut) { // while ended not because !thread.isAlive().
             TimeoutException ex = new TimeoutException(timeOut);
