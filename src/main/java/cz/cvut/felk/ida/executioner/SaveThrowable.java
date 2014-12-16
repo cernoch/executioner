@@ -22,37 +22,33 @@
 
 package cz.cvut.felk.ida.executioner;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import org.junit.Test;
+import java.lang.Thread.UncaughtExceptionHandler;
 
 /**
+ * Saves the last thrown exception in a field.
  * 
- *
- * @author Radomír Černoch (radomir.cernoch at gmail.com)
+ * <p>Every exception provided through {@link UncaughtExceptionHandler}
+ * is saved in a local field. It can be retrieved using {@link #thrown()}.</p>
  */
-public class FuturesTest {
+class SaveThrowable implements UncaughtExceptionHandler {
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void test() throws Exception {
-        
-        ExecutorService executor = Executors.newFixedThreadPool(1);
+    /**
+     * Last exception passed to {@link #uncaughtException(Thread, Throwable)}.
+     */
+    protected Throwable thrown;
 
-        // Here we throw UnsupportedOperationException...
-        Future<?> future = executor.submit(new Runnable() {
-            @Override public void run() {
-                throw new UnsupportedOperationException();
-            }
-        });
-        
-        // Normally, ExecutionException would be thrown,
-        try { // but instead of future.get(), we call:
-            Futures.get(future);
-            // and the original UnsupportedOperationException shall be outputed.
-            
-        } finally {
-            executor.shutdown();
-        }
+    /**
+     * Save the exception in {@link #thrown}.
+     */
+    @Override
+    public void uncaughtException(Thread t, Throwable thrown) {
+        this.thrown = thrown;
+    }
+
+    /**
+     * Last exception passed to {@link #uncaughtException(Thread, Throwable)}.
+     */
+    public Throwable thrown() {
+        return thrown;
     }
 }

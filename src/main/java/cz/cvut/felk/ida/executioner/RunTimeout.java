@@ -22,37 +22,36 @@
 
 package cz.cvut.felk.ida.executioner;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import org.junit.Test;
-
 /**
- * 
+ * Executes a {@link Runnable} with a timeout. 
  *
  * @author Radomír Černoch (radomir.cernoch at gmail.com)
  */
-public class FuturesTest {
+public class RunTimeout extends AbstractTimeout {
+    
+    /**
+     * Default constructor with a given timeout.
+     */
+    public RunTimeout(long timeOut) {
+        super(timeOut);
+    }
+    
+    /**
+     * Run a child process and terminate if timeout is exceeded.
+     * 
+     * <p>The child process is notified about the timeout using
+     * {@link Thread#interrupt()}. It can be picked up either by catching
+     * {@link InterruptedException} or {@link Thread#interrupted()}.</p>
+     * 
+     * <p>This method will not take much longer than the supplied timeout.</p>
+     * 
+     * @throws TimeoutException Time elapsed before the child ended.
+     * @throws InterruptedException Interrupted while waiting for the child.
+     * @throws Throwable Something went wrong in the child.
+     */
+    public void run(Runnable run) throws
+            TimeoutException, InterruptedException, Throwable {
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void test() throws Exception {
-        
-        ExecutorService executor = Executors.newFixedThreadPool(1);
-
-        // Here we throw UnsupportedOperationException...
-        Future<?> future = executor.submit(new Runnable() {
-            @Override public void run() {
-                throw new UnsupportedOperationException();
-            }
-        });
-        
-        // Normally, ExecutionException would be thrown,
-        try { // but instead of future.get(), we call:
-            Futures.get(future);
-            // and the original UnsupportedOperationException shall be outputed.
-            
-        } finally {
-            executor.shutdown();
-        }
+        run(run, new SaveThrowable());
     }
 }

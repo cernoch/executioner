@@ -35,8 +35,12 @@ public class HereWeWere extends Exception {
 
     private static final long serialVersionUID = 420338661L;
 
-    public HereWeWere(StackTraceElement[] stackTraceSnapshot) {
+    public HereWeWere() {
         super("Fake exception to indicate stack state when time-out occured.");
+    }
+    
+    public HereWeWere(StackTraceElement[] stackTraceSnapshot) {
+        this();
         setStackTrace(stackTraceSnapshot);
     }
 }
