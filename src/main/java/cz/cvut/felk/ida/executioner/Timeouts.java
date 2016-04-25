@@ -48,7 +48,7 @@ public class Timeouts {
      */
     public static <T> T call(long timeOut, Callable<? extends T> child)
             throws TimeoutException, InterruptedException, Throwable {
-        return new CallTimeout<T>(timeOut).call(child);
+        return new CallTimeout<T>(timeOut, child).call();
     }
     
     /**

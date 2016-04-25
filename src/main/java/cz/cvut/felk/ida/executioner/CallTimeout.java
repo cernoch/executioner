@@ -31,8 +31,13 @@ import java.util.concurrent.Callable;
  */
 public class CallTimeout<T> extends AbstractTimeout {
 
-    public CallTimeout(long timeOut) {
+    private final Callable<? extends T> child;
+    
+    public CallTimeout(long timeOut,
+            Callable<? extends T> child) {
+        
         super(timeOut);
+        this.child = child;
     }
     
     /**
@@ -47,18 +52,6 @@ public class CallTimeout<T> extends AbstractTimeout {
      */
     private class ResultSaver extends SaveThrowable implements Runnable {
         
-        /**
-         * Child to be called.
-         */
-        private final Callable<? extends T> child;
-        
-        /**
-         * Default constructor.
-         */
-        ResultSaver(Callable<? extends T> child) {
-            this.child = child;
-        }
-
         /**
          * Result from calling {@link #child}.
          */
@@ -94,10 +87,9 @@ public class CallTimeout<T> extends AbstractTimeout {
      * @throws InterruptedException Interrupted while waiting for the child.
      * @throws Throwable Something went wrong in the child.
      */
-    public T call(Callable<? extends T> child)
-            throws InterruptedException, TimeoutException, Throwable {
+    public T call() throws InterruptedException, TimeoutException, Throwable {
         
-        ResultSaver resultSaver = new ResultSaver(child);
+        ResultSaver resultSaver = new ResultSaver();
         run(resultSaver, resultSaver);
         return resultSaver.outcome;
     }
