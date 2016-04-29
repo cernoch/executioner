@@ -38,6 +38,31 @@ public class TimeoutException extends java.util.concurrent.TimeoutException {
         this.timeOut = timeOut;
     }
 
+    public TimeoutException(long timeOut,
+            StackTraceElement[] add,
+            int skipAdded, int skipMine) {
+        
+        this(timeOut);
+        StackTraceElement[] old = getStackTrace();
+
+        if (skipAdded > add.length) {
+            skipAdded = add.length;
+        }
+        
+        if (skipMine > old.length) {
+            skipMine = old.length;
+        }
+        
+        StackTraceElement[] neu = new StackTraceElement[
+                old.length + add.length - skipAdded - skipMine];
+        
+        System.arraycopy(add, 0,        neu, 0, add.length - skipAdded);
+        System.arraycopy(old, skipMine, neu,    add.length - skipAdded,
+                         old.length - skipMine);
+        
+        setStackTrace(neu);
+    }
+    
     /**
      * Time spent by spending for the other thread to stop.
      * 

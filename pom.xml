@@ -4,27 +4,25 @@
 
   <groupId>cz.cvut.felk.ida.executioner</groupId>
   <artifactId>executioner</artifactId>
-  <version>0.3</version>
+  <version>0.5</version>
   <name>Executioner with timeouts</name>
   <inceptionYear>2014</inceptionYear>
   <description>Parallel execution tools and stack manipulators</description>
 
   <properties>
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
     <netbeans.hint.license>mit</netbeans.hint.license>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
   <distributionManagement>
     <repository><id>ida-ssh</id><!-- IDA CVUT repository -->
-      <url>scpexe://ida/var/www/html/maven</url>
+      <url>scpexe://maven@ida.fel.cvut.cz/srv/maven/data</url>
     </repository>
   </distributionManagement>
   
   <repositories>
     <repository><id>ida</id><!-- IDA CVUT repository -->
-      <url>https://ida.felk.cvut.cz/maven2/</url>
+      <url>http://ida.fel.cvut.cz/maven</url>
     </repository>
   </repositories>
 
@@ -42,52 +40,55 @@
       <plugin><!-- Compile using Java 1.7 -->
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.1</version>
+        <version>3.3</version>
         <configuration>
-          <source>${maven.compiler.source}</source>
-          <target>${maven.compiler.target}</target>
+          <source>1.7</source><target>1.7</target>
           <encoding>${project.build.sourceEncoding}</encoding>
         </configuration>
       </plugin>
 
-      <plugin><!-- GPG sign artefacts -->
+      <plugin><!-- Sources attached -->
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-gpg-plugin</artifactId>
-        <version>1.5</version>
-        <executions>
-          <execution>
-            <phase>verify</phase>
-            <goals><goal>sign</goal></goals>
-          </execution>
-        </executions>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.4</version>
+        <executions><execution>
+          <goals><goal>jar</goal></goals>
+        </execution></executions>
       </plugin>
 
-      <plugin><!-- Attach JavaDoc automatically -->
+      <plugin><!-- Generate JavaDoc -->
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>2.9.1</version>
+        <version>2.10.3</version>
         <configuration>
           <encoding>${project.build.sourceEncoding}</encoding>
           <docfilessubdirs>true</docfilessubdirs>
           <windowtitle><![CDATA[CyberCalc API v${project.version}]]></windowtitle>
           <doctitle><![CDATA[CyberCalc API v${project.version}]]></doctitle>
         </configuration>
-        <executions>
-          <execution><id>attach-javadocs</id>
-            <goals><goal>jar</goal></goals>
-          </execution>
-        </executions>
+        <executions><execution>
+          <goals><goal>jar</goal></goals>
+        </execution></executions>
       </plugin>
 
-      <plugin><!-- Attach sources automatically -->
+      <plugin><!-- GPG sign artifacts. -->
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-        <version>2.3</version>
-        <executions>
-          <execution><id>attach-sources</id>
-            <goals><goal>jar-no-fork</goal></goals>
-          </execution>
-        </executions>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>1.6</version>
+        <executions><execution>
+          <phase>deploy</phase>
+          <goals><goal>sign</goal></goals>
+        </execution></executions>
+      </plugin>
+
+      <plugin><!-- Redeploy signed -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>2.7</version>
+        <executions><execution>
+          <phase>deploy</phase>
+          <goals><goal>deploy</goal></goals>
+        </execution></executions>
       </plugin>
     </plugins>
 
