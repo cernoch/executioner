@@ -125,4 +125,34 @@ public class ThreadPoolTest {
         }
     }
     
+    private class MyError extends Error {}
+    private class MyException extends Exception {}
+    
+    @Test(expected = MyError.class)
+    public void errorsPassedDirectly() throws Throwable {
+        ThreadPool pool = new ThreadPool(1);
+        try {
+            pool.submit(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    throw new MyError();
+                }
+            }).get();
+        } finally {
+            pool.shutdown();
+        }
+    }
+    
+    @Test(expected = MyException.class)
+    public void exceptionsPassedDirectly() throws Exception {
+        ThreadPool pool = new ThreadPool(1);
+        try {
+            pool.submit(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    throw new MyException();
+                }
+            }).get();
+        } finally {
+            pool.shutdown();
+        }
+    }
 }

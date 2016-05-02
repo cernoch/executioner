@@ -24,6 +24,7 @@
 package cz.cvut.felk.ida.executioner;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 /**
  *
@@ -90,14 +91,20 @@ public class Future<T> {
     }
     
     public synchronized T get()
-            throws InterruptedException, Throwable {
+            throws InterruptedException, Exception {
         
         while (status != Status.DONE) {
             wait();
         }
         
         if (thrown != null) {
-            throw thrown;
+            if (thrown instanceof Exception) {
+                throw (Exception) thrown;
+            } else if (thrown instanceof Error) {
+                throw (Error) thrown;
+            } else {
+                throw new ExecutionException(thrown);
+            }
         } else {
             return result;
         }
@@ -105,7 +112,7 @@ public class Future<T> {
     
     public synchronized T get(long timeOut)
             throws InterruptedException,
-                TimeoutException, Throwable {
+                TimeoutException, Exception {
         
         long remains = timeOut;
         long started = System.currentTimeMillis();
@@ -126,10 +133,6 @@ public class Future<T> {
             }
         }
         
-        if (thrown != null) {
-            throw thrown;
-        } else {
-            return result;
-        }
+        return get();
     }
 }
