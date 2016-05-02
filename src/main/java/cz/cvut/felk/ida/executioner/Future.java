@@ -100,14 +100,16 @@ public class Future<T> {
         if (thrown != null) {
             if (thrown instanceof Exception) {
                 throw (Exception) thrown;
-            } else if (thrown instanceof Error) {
-                throw (Error) thrown;
-            } else {
-                throw new ExecutionException(thrown);
             }
-        } else {
-            return result;
+            
+            if (thrown instanceof Error) {
+                throw (Error) thrown;
+            }
+            
+            throw new ExecutionException(thrown);
         }
+
+        return result;
     }
     
     public synchronized T get(long timeOut)

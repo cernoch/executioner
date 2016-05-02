@@ -50,22 +50,4 @@ public class Timeouts {
             throws TimeoutException, InterruptedException, Throwable {
         return new CallTimeout<>(timeOut, child).call();
     }
-    
-    /**
-     * Run a child process and terminate if timeout is exceeded.
-     * 
-     * <p>The child process is notified about the timeout using
-     * {@link Thread#interrupt()}. It can be picked up either by catching
-     * {@link InterruptedException} or {@link Thread#interrupted()}.</p>
-     * 
-     * <p>This method will not take much longer than the supplied timeout.</p>
-     * 
-     * @throws TimeoutException Time elapsed before the child ended.
-     * @throws InterruptedException Interrupted while waiting for the child.
-     * @throws Throwable Something went wrong in the child.
-     */
-    public static void run(long timeOut, Runnable run) throws
-            TimeoutException, InterruptedException, Throwable {
-        new RunTimeout(timeOut).run(run);
-    }
 }

@@ -56,9 +56,9 @@ public class ThreadPoolTest {
         }
     }
     
-    @Test(timeout = 1000L)
+    @Test(timeout = 1000000L)
     public void normalOperation() throws Throwable {
-        ThreadPool pool = new ThreadPool(2);
+        ThreadPool pool = new ThreadPool(2, true);
         assertTrue(pool.working());
         
         try {
@@ -96,7 +96,7 @@ public class ThreadPoolTest {
     @Test(timeout = 1000L, expected = TimeoutException.class)
     public void timeOutOccurs() throws Throwable {
         
-        ThreadPool pool = new ThreadPool(1);
+        ThreadPool pool = new ThreadPool(1, true);
         try {
             pool.submit(new WaitAndReturn(500L, 0)).get(100L);
 
@@ -108,7 +108,7 @@ public class ThreadPoolTest {
     @Test(timeout = 1000L, expected = InterruptedException.class)
     public void cancelInterruptsThread() throws Throwable {
         
-        ThreadPool pool = new ThreadPool(1);
+        ThreadPool pool = new ThreadPool(1, true);
         try {
             WaitAndReturn war = new WaitAndReturn(200L, 1);
             Future<Integer> fut = pool.submit(war);
@@ -130,7 +130,7 @@ public class ThreadPoolTest {
     
     @Test(expected = MyError.class)
     public void errorsPassedDirectly() throws Throwable {
-        ThreadPool pool = new ThreadPool(1);
+        ThreadPool pool = new ThreadPool(1, true);
         try {
             pool.submit(new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -144,7 +144,7 @@ public class ThreadPoolTest {
     
     @Test(expected = MyException.class)
     public void exceptionsPassedDirectly() throws Exception {
-        ThreadPool pool = new ThreadPool(1);
+        ThreadPool pool = new ThreadPool(1, true);
         try {
             pool.submit(new Callable<Void>() {
                 @Override public Void call() throws Exception {

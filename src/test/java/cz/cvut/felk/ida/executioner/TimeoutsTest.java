@@ -68,22 +68,10 @@ public class TimeoutsTest {
     @Test(expected = OutOfMemoryError.class)
     public void exceptionsFromChildCallableThrownAsExpected() throws Throwable {
 
-        Timeouts.call(100, new Callable<Object>() {
+        Timeouts.call(10000L, new Callable<Object>() {
 
             @Override
             public Object call() throws Exception {
-                throw new OutOfMemoryError();
-            }
-        });
-    }
-    
-    @Test(expected = OutOfMemoryError.class)
-    public void exceptionsFromChildRunnableThrownAsExpected() throws Throwable {
-        
-        Timeouts.run(100, new Runnable() {
-
-            @Override
-            public void run() {
                 throw new OutOfMemoryError();
             }
         });

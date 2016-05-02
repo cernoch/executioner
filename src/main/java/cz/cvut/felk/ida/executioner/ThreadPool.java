@@ -32,27 +32,44 @@ import java.util.concurrent.*;
  */
 public class ThreadPool {
     
-    private final List<Thread> pool;
+    private final List<Thread> pool = new LinkedList<>();
 
-    public ThreadPool(int threads) {
+    private final boolean fixed;
+    
+    public final BlockingQueue<Future<?>> queue = new LinkedBlockingQueue<>();
 
-        this.pool = Arrays.asList(new Thread[threads]);
-        for (int thread = 0; thread < pool.size(); thread++) {
-            pool.set(thread, new Thread(new Worker()));
-        }
+    private final ThreadFactory factory;
+    
+    public ThreadPool(int threads, boolean fixed) {
+        this(threads, fixed, Executors.defaultThreadFactory());
+    }
+    
+    public ThreadPool(int threads, boolean fixed,
+            ThreadFactory factory) {
+
+        this.fixed = fixed;
+        this.factory = factory;
+        startThreads(threads, true);
+    }
+    
+    private void startThreads(int count, boolean zombie) {
         
-        this.queue = new LinkedBlockingQueue<>();
-        
-        for (Thread thread : pool) {
+        for (int i = 0; i < count; i++) {
+            Thread thread = factory.newThread(new Worker(true));
+            pool.add(thread);
             thread.start();
         }
     }
     
-    public final BlockingQueue<Future<?>> queue;
-    
     public <T> Future<T> submit(Callable<T> task) {
+        
         Future<T> future = new Future<>(task);
         queue.add(future);
+
+        if (!fixed && !queue.isEmpty()) {
+            startThreads(1, false);
+        }
+        
         return future;
     }
     
@@ -81,16 +98,46 @@ public class ThreadPool {
         return false;
     }
     
+    private int waiting = 0;
+    
     private class Worker implements Runnable {
 
+        private final boolean zombie;
+
+        public Worker(boolean zombie) {
+            this.zombie = zombie;
+        }
+        
+        private Future<?> pickup() throws InterruptedException {
+            Future<?> out;
+
+            //synchronized (queue) {
+                try {
+                    waiting++;
+                    
+                    out = zombie ? queue.take()
+                        : queue.poll(3, TimeUnit.SECONDS);
+                    
+                } finally {
+                    waiting--;
+                }
+            //}
+            
+            if (out == null) {
+                throw new InterruptedException("Dusk of worker's life.");
+            }
+            
+            return out;
+        }
+        
         @Override
         public void run() {
             try {
                 while (!exitting) {
-                    queue.take().execute();
+                    pickup().execute();
                 }
             } catch (InterruptedException ex) {
-                // Thrown in the take(). That's fine.
+                // Thrown in the queue.take() or not a zombie. That's fine.
             }
         }
     }

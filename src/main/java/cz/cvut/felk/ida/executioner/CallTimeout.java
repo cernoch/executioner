@@ -28,54 +28,40 @@ import java.util.concurrent.Callable;
  * Executes a {@link Callable} with a timeout and returns its result.
  *
  * @author Radomír Černoch (radomir.cernoch at gmail.com)
+ * @param <T> Type of the result
  */
-public class CallTimeout<T> extends AbstractTimeout {
+public class CallTimeout<T> implements Callable<T> {
 
+    /**
+     * Time-out in milliseconds.
+     */
+    protected final long timeOut;
+
+    /**
+     * Child process to be executed.
+     */
     private final Callable<? extends T> child;
+
+    private final ThreadPool pool;
+
+    private static final ThreadPool DEFAULT_POOL = new ThreadPool(0, false);
     
     public CallTimeout(long timeOut,
             Callable<? extends T> child) {
+        this(timeOut, child, DEFAULT_POOL);
+    }
+    
+    public CallTimeout(long timeOut,
+            Callable<? extends T> child,
+            ThreadPool pool) {
         
-        super(timeOut);
+        this.timeOut = timeOut;
         this.child = child;
+        this.pool = pool;
     }
     
     /**
-     * Encapsulates a {@link Callable} into a {@link Runnable}.
-     * 
-     * <p>The {@link #run()} calls the {@link Callable#call()} and saves
-     * the result. That's the main purpose of this class.</p>
-     * 
-     * <p>A potential exception is cleverly saved into
-     * {@link SaveThrowable#thrown}, so that it will be
-     * picked up by {@link AbstractTimeout#run(SaveThrowable, Runnable)}.</p>
-     */
-    private class ResultSaver extends SaveThrowable implements Runnable {
-        
-        /**
-         * Result from calling {@link #child}.
-         */
-        private T outcome;
-        
-        /**
-         * Result from calling {@link #child}.
-         */
-        public T outcome() {
-            return outcome;
-        }
-        
-        @Override
-        public void run() {
-            try {
-                outcome = child.call();
-            } catch (Exception ex) {
-                thrown = ex;
-            }
-        }
-    }
-    
-    /**
-     * Run a child process, terminate if timeout is exceeded and return result.
+     * Start the computation and terminate after timeout.
      * 
      * <p>The child process is notified about the timeout using
      * {@link Thread#interrupt()}. It can be picked up either by catching
@@ -83,14 +69,17 @@ public class CallTimeout<T> extends AbstractTimeout {
      * 
      * <p>This method will not take much longer than the supplied timeout.</p>
      * 
-     * @throws TimeoutException Time elapsed before the child ended.
      * @throws InterruptedException Interrupted while waiting for the child.
-     * @throws Throwable Something went wrong in the child.
+     * @throws TimeoutException Time elapsed before the child ended.
      */
-    public T call() throws InterruptedException, TimeoutException, Throwable {
+    @Override
+    public T call() throws InterruptedException, TimeoutException, Exception {
         
-        ResultSaver resultSaver = new ResultSaver();
-        run(resultSaver, resultSaver);
-        return resultSaver.outcome;
+        Future<? extends T> future = pool.submit(child);
+        try {
+            return future.get(timeOut);
+        } finally {
+            future.cancel();
+        }
     }
 }
