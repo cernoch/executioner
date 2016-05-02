@@ -56,7 +56,7 @@ public class ThreadPoolTest {
         }
     }
     
-    @Test(timeout = 1000000L)
+    @Test(timeout = 1000L)
     public void normalOperation() throws Throwable {
         ThreadPool pool = new ThreadPool(2, true);
         assertTrue(pool.working());

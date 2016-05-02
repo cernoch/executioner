@@ -55,6 +55,11 @@ public class Future<T> {
     }
     
     void execute() {
+        assert status != Status.RUNNING;
+        if (status == Status.DONE) {
+            return;
+        }
+        
         try {
             started(Thread.currentThread());
             success(task.call());
@@ -88,6 +93,7 @@ public class Future<T> {
         if (worker != null) {
             worker.interrupt();
         }
+        failed(null);
     }
     
     public synchronized T get()
