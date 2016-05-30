@@ -44,6 +44,8 @@ public class Future<T> {
     
     private Thread worker;
     
+    private long timing;
+    
     private Status status = Status.QUEUED;
 
     public static enum Status {
@@ -73,9 +75,12 @@ public class Future<T> {
         this.status = Status.RUNNING;
         this.worker = worker;
         notifyAll();
+
+        this.timing = System.currentTimeMillis();
     }
     
     private synchronized void success(T result) {
+        this.timing = System.currentTimeMillis() - this.timing;
         this.status = Status.DONE;
         this.result = result;
         this.worker = null;
@@ -83,10 +88,19 @@ public class Future<T> {
     }
     
     private synchronized void failed(Throwable thrown) {
+        this.timing = System.currentTimeMillis() - this.timing;
         this.status = Status.DONE;
         this.thrown = thrown;
         this.worker = null;
         notifyAll();
+    }
+    
+    public long cpuTime() {
+        if (status != Status.DONE) {
+            throw new IllegalStateException("Not done yet.");
+        }
+        
+        return timing;
     }
     
     public synchronized void cancel() {
