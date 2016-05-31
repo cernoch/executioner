@@ -9,6 +9,7 @@ package cz.cvut.felk.ida.executioner;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadFactory;
 import org.junit.Assert;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -116,5 +117,42 @@ public class TimeoutsTest {
         assertTrue(unexpected.isEmpty()); 
         // ...and the caller should meet InterruptedEx.
         assertEquals(1, expected.size()); 
+    }
+    
+    @Test
+    public void doNotCreateTooManyThreads() throws Exception {
+        
+        ThreadFactory factory = new LimitedThreadFactory(1);
+        ThreadPool pool = new ThreadPool(0, false, factory);
+        
+        Callable<Void> call = new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                Thread.sleep(10L);
+                return null;
+            }
+        };
+        
+        for (int round = 0; round < 20; round++) {
+            new CallTimeout(100L, call, pool).call();
+        }
+    }
+
+    private class LimitedThreadFactory implements ThreadFactory {
+
+        private int remaining;
+
+        public LimitedThreadFactory(int remaining) {
+            this.remaining = remaining;
+        }
+        
+        @Override
+        public Thread newThread(Runnable r) {
+            
+            if (remaining-- < 0) {
+                throw new IllegalStateException();
+            }
+            
+            return new Thread(r);
+        }
     }
 }

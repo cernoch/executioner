@@ -55,7 +55,7 @@ public class ThreadPool {
     private void startThreads(int count, boolean zombie) {
         
         for (int i = 0; i < count; i++) {
-            Thread thread = factory.newThread(new Worker(true));
+            Thread thread = factory.newThread(new Worker(zombie));
             pool.add(thread);
             thread.start();
         }
@@ -67,7 +67,17 @@ public class ThreadPool {
         queue.add(future);
 
         if (!fixed && !queue.isEmpty()) {
-            startThreads(1, false);
+            
+            // This is really ugly.
+            try {Thread.sleep(1L);}
+            catch (InterruptedException ex) {}
+            // gives time for the queue to
+            // update its .isEmpty() status...
+            // We need a better queue!
+            
+            if (!queue.isEmpty()) {
+                startThreads(1, false);
+            }
         }
         
         return future;
