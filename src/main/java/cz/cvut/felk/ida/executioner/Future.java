@@ -106,8 +106,10 @@ public class Future<T> {
     public synchronized void cancel() {
         if (worker != null) {
             worker.interrupt();
+            worker = null;
         }
-        failed(null);
+        status = Status.DONE;
+        notifyAll();
     }
     
     public synchronized T get()
