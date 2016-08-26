@@ -34,8 +34,16 @@ public class Future<T> {
     
     public final Callable<T> task;
 
+    private final Object notified;
+    
+    public Future(Callable<T> task, Object notifier) {
+        this.task = task;
+        this.notified = notifier;
+    }
+    
     public Future(Callable<T> task) {
         this.task = task;
+        this.notified = this;
     }
     
     private T result;
@@ -71,92 +79,109 @@ public class Future<T> {
         }
     }
     
-    synchronized void started(Thread worker) {
-        this.status = Status.RUNNING;
-        this.worker = worker;
-        notifyAll();
-
-        this.timing = System.currentTimeMillis();
+    void started(Thread worker) {
+        synchronized (notified) {
+            this.status = Status.RUNNING;
+            this.worker = worker;
+            notified.notifyAll();
+            this.timing = System.currentTimeMillis();
+        }
     }
     
-    private synchronized void success(T result) {
-        this.timing = System.currentTimeMillis() - this.timing;
-        this.status = Status.DONE;
-        this.result = result;
-        this.worker = null;
-        notifyAll();
+    private void success(T result) {
+        synchronized (notified) {
+            this.timing = System.currentTimeMillis() - this.timing;
+            this.status = Status.DONE;
+            this.result = result;
+            this.worker = null;
+            notified.notifyAll();
+        }
     }
     
-    private synchronized void failed(Throwable thrown) {
-        this.timing = System.currentTimeMillis() - this.timing;
-        this.status = Status.DONE;
-        this.thrown = thrown;
-        this.worker = null;
-        notifyAll();
+    private void failed(Throwable thrown) {
+        synchronized (notified) {
+            this.timing = System.currentTimeMillis() - this.timing;
+            this.status = Status.DONE;
+            this.thrown = thrown;
+            this.worker = null;
+            notified.notifyAll();
+        }
     }
     
     public long cpuTime() {
-        if (status != Status.DONE) {
-            throw new IllegalStateException("Not done yet.");
-        }
-        
-        return timing;
-    }
-    
-    public synchronized void cancel() {
-        if (worker != null) {
-            worker.interrupt();
-            worker = null;
-        }
-        status = Status.DONE;
-        notifyAll();
-    }
-    
-    public synchronized T get()
-            throws InterruptedException, Exception {
-        
-        while (status != Status.DONE) {
-            wait();
-        }
-        
-        if (thrown != null) {
-            if (thrown instanceof Exception) {
-                throw (Exception) thrown;
-            }
-            
-            if (thrown instanceof Error) {
-                throw (Error) thrown;
-            }
-            
-            throw new ExecutionException(thrown);
-        }
+        synchronized (notified) {
+            switch (status) {
+                case DONE:
+                    return timing;
 
-        return result;
+                case RUNNING:
+                    return System.currentTimeMillis() - this.timing;
+
+                default:
+                    throw new IllegalStateException("Not started yet.");
+            }
+        }
     }
     
-    public synchronized T get(long timeOut)
+    public void cancel() {
+        synchronized (notified) {
+            if (worker != null) {
+                worker.interrupt();
+                worker = null;
+            }
+            status = Status.DONE;
+            notified.notifyAll();
+        }
+    }
+    
+    public T get() throws InterruptedException, Exception {
+        synchronized (notified) {
+            
+            while (status != Status.DONE) {
+                notified.wait();
+            }
+
+            if (thrown != null) {
+                if (thrown instanceof Exception) {
+                    throw (Exception) thrown;
+                }
+
+                if (thrown instanceof Error) {
+                    throw (Error) thrown;
+                }
+
+                throw new ExecutionException(thrown);
+            }
+
+            return result;
+        }
+    }
+    
+    public T get(long timeOut)
             throws InterruptedException,
                 TimeoutException, Exception {
         
-        long remains = timeOut;
-        long started = System.currentTimeMillis();
-        
-        while (status != Status.DONE && remains > 0) {
-            wait(remains);
-            
-            remains = timeOut + started
-                    - System.currentTimeMillis();
-        }
-        
-        if (status != Status.DONE) {
-            if (worker != null) {
-                throw new TimeoutException(timeOut,
-                        worker.getStackTrace(), 3, 1);
-            } else {
-                throw new TimeoutException(timeOut);
+        synchronized (notified) {
+            long remains = timeOut;
+            long started = System.currentTimeMillis();
+
+            while (status != Status.DONE && remains > 0) {
+                notified.wait(remains);
+
+                remains = timeOut + started
+                        - System.currentTimeMillis();
             }
+
+            if (status != Status.DONE) {
+                if (worker != null) {
+                    throw new TimeoutException(timeOut,
+                            worker.getStackTrace(), 3, 1);
+                } else {
+                    throw new TimeoutException(timeOut);
+                }
+            }
+
+            return get();
         }
-        
-        return get();
     }
 }

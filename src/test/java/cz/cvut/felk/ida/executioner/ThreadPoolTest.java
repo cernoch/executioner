@@ -155,4 +155,32 @@ public class ThreadPoolTest {
             pool.shutdown();
         }
     }
+    
+    @Test(timeout = 800L)
+    public void oneOfReturnsEarly() throws Exception {
+        
+        ThreadPool pool = new ThreadPool(2, true);
+        
+        Future<Integer> first = pool.oneof(
+                new WaitAndReturn(900L, 1),
+                new WaitAndReturn(500L, 2),
+                new WaitAndReturn(200L, 3),
+                new WaitAndReturn(100L, 4));
+        
+        assertEquals(2, first.get().intValue());
+    }
+    
+    @Test
+    public void oneOfWaitsForBest() throws Exception {
+        
+        ThreadPool pool = new ThreadPool(2, true);
+        
+        Future<Integer> first = pool.first(
+                new WaitAndReturn(900L, 1),
+                new WaitAndReturn(500L, 2),
+                new WaitAndReturn(200L, 3),
+                new WaitAndReturn(100L, 4));
+        
+        assertEquals(4, first.get().intValue());
+    }
 }

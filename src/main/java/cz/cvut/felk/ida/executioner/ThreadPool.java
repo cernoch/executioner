@@ -83,6 +83,104 @@ public class ThreadPool {
         return future;
     }
     
+    public <T> Future<T> oneof(Callable<T>... tasks)
+            throws InterruptedException {
+        
+        ArrayList<Future<T>> flist = new ArrayList<>(tasks.length);
+        
+        synchronized (flist) {
+        
+            for (Callable<T> task : tasks) {
+                Future<T> future = new Future<>(task, flist);
+                queue.add(future);
+                flist.add(future);
+            }
+
+            if (!fixed && !queue.isEmpty()) {
+
+                // This is really ugly.
+                try {Thread.sleep(1L);}
+                catch (InterruptedException ex) {}
+                // gives time for the queue to
+                // update its .isEmpty() status...
+                // We need a better queue!
+
+                if (!queue.isEmpty()) {
+                    startThreads(1, false);
+                }
+            }
+
+            while (true) {
+                flist.wait();
+
+                for (Future<T> future : flist) {
+                    if (future.status() == Future.Status.DONE) {
+                        return future;
+                    }
+                }
+            }
+        }
+    }
+    
+    public <T> Future<T> first(Callable<T>... tasks)
+            throws InterruptedException {
+        
+        ArrayList<Future<T>> flist = new ArrayList<>(tasks.length);
+        
+        synchronized (flist) {
+        
+            for (Callable<T> task : tasks) {
+                Future<T> future = new Future<>(task, flist);
+                queue.add(future);
+                flist.add(future);
+            }
+
+            if (!fixed && !queue.isEmpty()) {
+
+                // This is really ugly.
+                try {Thread.sleep(1L);}
+                catch (InterruptedException ex) {}
+                // gives time for the queue to
+                // update its .isEmpty() status...
+                // We need a better queue!
+
+                if (!queue.isEmpty()) {
+                    startThreads(1, false);
+                }
+            }
+        
+            Future<T> best = null;
+
+            while (true) {
+                flist.wait();
+
+                for (Future<T> future : flist) {
+                    if (future.status() == Future.Status.DONE) {
+                        if (best == null || future.cpuTime() < best.cpuTime()) {
+                            best = future;
+                        }
+                    }
+                }
+
+                if (best != null) {
+                    boolean allOver = true;
+
+                    for (Future<T> future : flist) {
+                        if (future.status() == Future.Status.QUEUED ||
+                            future.cpuTime() < best.cpuTime()) {
+                            allOver = false;
+                            break;
+                        }
+                    }
+
+                    if (allOver) {
+                        return best;
+                    }
+                }
+            }
+        }
+    }
+    
     private boolean exitting = false;
     
     public boolean exitting() {
