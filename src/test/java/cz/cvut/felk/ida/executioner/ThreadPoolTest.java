@@ -156,7 +156,7 @@ public class ThreadPoolTest {
         }
     }
     
-    @Test(timeout = 800L)
+    @Test(timeout = 800L) // 500L + overhead
     public void oneOfReturnsEarly() throws Exception {
         
         ThreadPool pool = new ThreadPool(2, true);
@@ -170,8 +170,8 @@ public class ThreadPoolTest {
         assertEquals(2, first.get().intValue());
     }
     
-    @Test
-    public void oneOfWaitsForBest() throws Exception {
+    @Test(timeout = 900L) // 500L + 100L + overhead
+    public void firstWaitsForBest() throws Exception {
         
         ThreadPool pool = new ThreadPool(2, true);
         
@@ -182,5 +182,6 @@ public class ThreadPoolTest {
                 new WaitAndReturn(100L, 4));
         
         assertEquals(4, first.get().intValue());
+        assertTrue(first.cpuTime() < 150L);
     }
 }
