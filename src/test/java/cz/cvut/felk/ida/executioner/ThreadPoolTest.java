@@ -23,7 +23,6 @@
  */
 package cz.cvut.felk.ida.executioner;
 
-import java.util.concurrent.Callable;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -35,26 +34,6 @@ import org.junit.Test;
  */
 public class ThreadPoolTest {
     
-    private static class WaitAndReturn implements Callable<Integer> {
-
-        private final long waitTime;
-        
-        private final Integer value;
-        
-        public boolean returned = false;
-
-        public WaitAndReturn(long waitTime, Integer value) {
-            this.waitTime = waitTime;
-            this.value = value;
-        }
-        
-        @Override
-        public Integer call() throws Exception {
-            Thread.sleep(waitTime);
-            returned = true;
-            return value;
-        }
-    }
     
     @Test(timeout = 1000L)
     public void normalOperation() throws Throwable {
@@ -62,27 +41,31 @@ public class ThreadPoolTest {
         assertTrue(pool.working());
         
         try {
-            Future<Integer> f1 = pool.submit(new WaitAndReturn(200L, 0));
-            Future<Integer> f2 = pool.submit(new WaitAndReturn(200L, 1));
-            Future<Integer> f3 = pool.submit(new WaitAndReturn(200L, 2));
-            Future<Integer> f4 = pool.submit(new WaitAndReturn(200L, 3));
+            SimpleFuture<Integer,InterruptedException> f1 = pool.submit(
+                    InterruptedException.class, new WaitAndReturn(200L, 0));
+            SimpleFuture<Integer,InterruptedException> f2 = pool.submit(
+                    InterruptedException.class, new WaitAndReturn(200L, 1));
+            SimpleFuture<Integer,InterruptedException> f3 = pool.submit(
+                    InterruptedException.class, new WaitAndReturn(200L, 2));
+            SimpleFuture<Integer,InterruptedException> f4 = pool.submit(
+                    InterruptedException.class, new WaitAndReturn(200L, 3));
 
             Thread.sleep(100L);
             
-            assertEquals(Future.Status.RUNNING, f1.status());
-            assertEquals(Future.Status.RUNNING, f2.status());
-            assertEquals(Future.Status.QUEUED,  f3.status());
-            assertEquals(Future.Status.QUEUED,  f4.status());
+            assertEquals(SimpleFuture.Status.RUNNING, f1.status());
+            assertEquals(SimpleFuture.Status.RUNNING, f2.status());
+            assertEquals(SimpleFuture.Status.QUEUED,  f3.status());
+            assertEquals(SimpleFuture.Status.QUEUED,  f4.status());
 
             assertEquals((Integer) 0, f1.get());
             assertEquals((Integer) 1, f2.get());
             assertEquals((Integer) 2, f3.get());
             assertEquals((Integer) 3, f4.get());
 
-            assertEquals(Future.Status.DONE, f1.status());
-            assertEquals(Future.Status.DONE, f2.status());
-            assertEquals(Future.Status.DONE, f3.status());
-            assertEquals(Future.Status.DONE, f4.status());
+            assertEquals(SimpleFuture.Status.DONE, f1.status());
+            assertEquals(SimpleFuture.Status.DONE, f2.status());
+            assertEquals(SimpleFuture.Status.DONE, f3.status());
+            assertEquals(SimpleFuture.Status.DONE, f4.status());
             
         } finally {
             assertTrue(pool.working());
@@ -94,11 +77,12 @@ public class ThreadPoolTest {
     }
     
     @Test(timeout = 1000L, expected = TimeoutException.class)
-    public void timeOutOccurs() throws Throwable {
+    public void timeOutOccurs() throws InterruptedException, TimeoutException {
         
         ThreadPool pool = new ThreadPool(1, true);
         try {
-            pool.submit(new WaitAndReturn(500L, 0)).get(100L);
+            pool.submit(InterruptedException.class,
+                    new WaitAndReturn(500L, 0)).get(100L);
 
         } finally {
             pool.shutdown();
@@ -106,12 +90,13 @@ public class ThreadPoolTest {
     }
     
     @Test(timeout = 1000L, expected = InterruptedException.class)
-    public void cancelInterruptsThread() throws Throwable {
+    public void cancelInterruptsThread() throws InterruptedException {
         
         ThreadPool pool = new ThreadPool(1, true);
         try {
             WaitAndReturn war = new WaitAndReturn(200L, 1);
-            Future<Integer> fut = pool.submit(war);
+            SimpleFuture<Integer,InterruptedException> fut =
+                    pool.submit(InterruptedException.class, war);
             
             Thread.sleep(100L);
             fut.cancel();
@@ -124,19 +109,27 @@ public class ThreadPoolTest {
             pool.shutdown();
         }
     }
+
+    public static class MyError extends Error {}
+    public static class MyException extends Exception {}
+
+    public static class ThrowMyError implements Call<Void,RuntimeException> {
+        @Override public Void call() {
+            throw new MyError();
+        }
+    }
     
-    private class MyError extends Error {}
-    private class MyException extends Exception {}
+    public static class ThrowMyException implements Call<Void,MyException> {
+        @Override public Void call() throws MyException {
+            throw new MyException();
+        }
+    }
     
     @Test(expected = MyError.class)
     public void errorsPassedDirectly() throws Throwable {
         ThreadPool pool = new ThreadPool(1, true);
         try {
-            pool.submit(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    throw new MyError();
-                }
-            }).get();
+            pool.submit(RuntimeException.class, new ThrowMyError()).get();
         } finally {
             pool.shutdown();
         }
@@ -146,42 +139,9 @@ public class ThreadPoolTest {
     public void exceptionsPassedDirectly() throws Exception {
         ThreadPool pool = new ThreadPool(1, true);
         try {
-            pool.submit(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    throw new MyException();
-                }
-            }).get();
+            pool.submit(MyException.class, new ThrowMyException()).get();
         } finally {
             pool.shutdown();
         }
-    }
-    
-    @Test(timeout = 800L) // 500L + overhead
-    public void oneOfReturnsEarly() throws Exception {
-        
-        ThreadPool pool = new ThreadPool(2, true);
-        
-        Future<Integer> first = pool.oneof(
-                new WaitAndReturn(900L, 1),
-                new WaitAndReturn(500L, 2),
-                new WaitAndReturn(200L, 3),
-                new WaitAndReturn(100L, 4));
-        
-        assertEquals(2, first.get().intValue());
-    }
-    
-    @Test(timeout = 900L) // 500L + 100L + overhead
-    public void firstWaitsForBest() throws Exception {
-        
-        ThreadPool pool = new ThreadPool(2, true);
-        
-        Future<Integer> first = pool.first(
-                new WaitAndReturn(900L, 1),
-                new WaitAndReturn(500L, 2),
-                new WaitAndReturn(200L, 3),
-                new WaitAndReturn(100L, 4));
-        
-        assertEquals(4, first.get().intValue());
-        assertTrue(first.cpuTime() < 150L);
     }
 }

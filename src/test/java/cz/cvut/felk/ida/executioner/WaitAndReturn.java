@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2016 Radomír Černoch (radomir.cernoch at gmail.com).
+ * Copyright 2016 Radek.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,40 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package cz.cvut.felk.ida.executioner.legacy;
-
-import cz.cvut.felk.ida.executioner.CallTimeout;
-import cz.cvut.felk.ida.executioner.TimeoutException;
-import java.util.concurrent.Callable;
+package cz.cvut.felk.ida.executioner;
 
 /**
  *
- * @author Radomír Černoch (radomir.cernoch at gmail.com)
+ * @author Radek
  */
-public class LegacyCall<T> extends CallTimeout<T> implements Callable<T> {
+class WaitAndReturn implements Call<Integer, InterruptedException> {
+    
+    private final long waitTime;
+    
+    private final Integer value;
+    
+    public boolean returned = false;
 
-    public LegacyCall(long timeOut, Callable<? extends T> child) {
-        super(timeOut, child);
+    public WaitAndReturn(long waitTime, Integer value) {
+        this.waitTime = waitTime;
+        this.value = value;
     }
 
     @Override
-    public T call() throws
-            InterruptedException,
-            TimeoutException,
-            LowLevelException,
-            Exception {
-        
-        try {
-            return super.call();
-            
-        } catch (InterruptedException | TimeoutException ex) {
-            throw ex;
-            
-        } catch (Exception ex) {
-            throw ex;
-            
-        } catch (Throwable ex) {
-            throw new LowLevelException(ex);
-        }
+    public Integer call() throws InterruptedException {
+        Thread.sleep(waitTime);
+        returned = true;
+        return value;
     }
 }
