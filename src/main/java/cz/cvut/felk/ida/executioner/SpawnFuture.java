@@ -203,9 +203,9 @@ public class SpawnFuture<T, E extends Exception> implements Future<T, E> {
         public Void call() throws InterruptedException {
             synchronized (SpawnFuture.this) {
 
-                boolean someDone = false;
-                while (!someDone) {
-                    someDone = false;
+                boolean someRuns = false;
+                while (!someRuns) {
+                    someRuns = false;
                     
                     for (SimpleFuture<T, E> fut : tasks) {
 
@@ -216,9 +216,12 @@ public class SpawnFuture<T, E extends Exception> implements Future<T, E> {
                             }
                         }
                         
-                        if (fut.status() == Status.DONE && fut.thrown == null) {
-                            someDone = true;
-                            best = fut;
+                        if (fut.status() == Status.DONE) {
+                            someRuns = true;
+                            
+                            if (fut.thrown == null) {
+                                best = fut;
+                            }
                         }
                     }
                     
@@ -241,7 +244,7 @@ public class SpawnFuture<T, E extends Exception> implements Future<T, E> {
                         }
                     }
                     
-                    if (!someDone) {
+                    if (!someRuns) {
                         SpawnFuture.this.wait(nextEvent);
                     }
                 }
