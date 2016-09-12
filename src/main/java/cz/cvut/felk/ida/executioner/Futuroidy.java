@@ -32,19 +32,19 @@ import java.util.List;
  * @param <T>
  * @param <E>
  */
-public class SpawnFuture<T, E extends Exception> implements Future<T, E> {
+public class Futuroidy<T, E extends Exception> implements Future<T, E> {
 
-    private final List<SimpleFuture<T, E>> tasks;
+    final List<Futuroid<T, E>> tasks;
     
     private final long timeOut;
     
     public final long started = System.currentTimeMillis();
     
-    private SimpleFuture<T, E> best = null;
+    private Futuroid<T, E> best = null;
     
     private Status status = Status.QUEUED;
 
-    public SpawnFuture(List<SimpleFuture<T, E>> flist, long timeOut) {
+    public Futuroidy(List<Futuroid<T, E>> flist, long timeOut) {
         this.tasks = Collections.unmodifiableList(flist);
         this.timeOut = timeOut;
     }
@@ -76,7 +76,7 @@ public class SpawnFuture<T, E extends Exception> implements Future<T, E> {
         // if "best" is null & status is DONE,
         // then all subtasks must have failed.
         AllTasksFailed thrown = new AllTasksFailed();
-        for (SimpleFuture<T,E> fut : tasks) {
+        for (Futuroid<T,E> fut : tasks) {
             if (fut.thrown != null) {
                 thrown.addSuppressed(fut.thrown);
             }
@@ -96,7 +96,7 @@ public class SpawnFuture<T, E extends Exception> implements Future<T, E> {
 
     @Override
     public synchronized void cancel() {
-        for (SimpleFuture<T, E> future : tasks) {
+        for (Futuroid<T, E> future : tasks) {
             future.cancel();
         }
     }
@@ -121,7 +121,7 @@ public class SpawnFuture<T, E extends Exception> implements Future<T, E> {
         long[] cpuTimes = new long[this.tasks.size()];
         
         int i = 0;
-        for (SimpleFuture<T,E> fut : tasks) {
+        for (Futuroid<T,E> fut : tasks) {
 
             if (fut.thrown == null) {
                 cpuTimes[i++] = fut.cpuTime();
@@ -137,18 +137,18 @@ public class SpawnFuture<T, E extends Exception> implements Future<T, E> {
 
         @Override
         public Void call() throws InterruptedException {
-            synchronized (SpawnFuture.this) {
+            synchronized (Futuroidy.this) {
 
                 boolean allDone = false;
                 while (!allDone) {
                     allDone = true;
                     
-                    for (SimpleFuture<T, E> fut : tasks) {
+                    for (Futuroid<T, E> fut : tasks) {
 
                         if (fut.status() == Status.RUNNING) {
                             if (status != Status.RUNNING) {
                                 status = Status.RUNNING;
-                                SpawnFuture.this.notifyAll();
+                                Futuroidy.this.notifyAll();
                             }
                         }
                         if (fut.status() == Status.DONE && fut.thrown == null) {
@@ -161,7 +161,7 @@ public class SpawnFuture<T, E extends Exception> implements Future<T, E> {
                     // time to the next expected event
                     long nextEvent = timeOut();
                     
-                    for (SimpleFuture<T, E> future : tasks) {
+                    for (Futuroid<T, E> future : tasks) {
 
                         if (future.status() == Status.RUNNING) {
                             long remains = timeOut() - future.cpuTime();
@@ -186,11 +186,11 @@ public class SpawnFuture<T, E extends Exception> implements Future<T, E> {
                     }
                     
                     if (!allDone) {
-                        SpawnFuture.this.wait(nextEvent);
+                        Futuroidy.this.wait(nextEvent);
                     }
                 }
                 status = Status.DONE;
-                SpawnFuture.this.notifyAll();
+                Futuroidy.this.notifyAll();
                 return null;
 
             }
@@ -201,18 +201,18 @@ public class SpawnFuture<T, E extends Exception> implements Future<T, E> {
 
         @Override
         public Void call() throws InterruptedException {
-            synchronized (SpawnFuture.this) {
+            synchronized (Futuroidy.this) {
 
                 boolean someRuns = false;
                 while (!someRuns) {
                     someRuns = false;
                     
-                    for (SimpleFuture<T, E> fut : tasks) {
+                    for (Futuroid<T, E> fut : tasks) {
 
                         if (fut.status() == Status.RUNNING) {
                             if (status != Status.RUNNING) {
                                 status = Status.RUNNING;
-                                SpawnFuture.this.notifyAll();
+                                Futuroidy.this.notifyAll();
                             }
                         }
                         
@@ -228,7 +228,7 @@ public class SpawnFuture<T, E extends Exception> implements Future<T, E> {
                     // time to the next expected event
                     long nextEvent = timeOut;
                     
-                    for (SimpleFuture<T, E> future : tasks) {
+                    for (Futuroid<T, E> future : tasks) {
 
                         if (future.status() == Status.RUNNING) {
                             if (timeOut > 0) {
@@ -245,16 +245,16 @@ public class SpawnFuture<T, E extends Exception> implements Future<T, E> {
                     }
                     
                     if (!someRuns) {
-                        SpawnFuture.this.wait(nextEvent);
+                        Futuroidy.this.wait(nextEvent);
                     }
                 }
                 
-                for (SimpleFuture<T, E> future : tasks) {
+                for (Futuroid<T, E> future : tasks) {
                     future.cancel();
                 }                
                 
                 status = Status.DONE;
-                SpawnFuture.this.notifyAll();
+                Futuroidy.this.notifyAll();
                 return null;
             }
         }

@@ -31,7 +31,7 @@ import cz.cvut.felk.ida.executioner.Future.Status;
  * @param <T>
  * @param <E>
  */
-public class SimpleFuture<T, E extends Exception> implements Future<T, E> {
+public class Futuroid<T, E extends Exception> implements Future<T, E> {
     
     public final Call<T,E> task;
 
@@ -39,13 +39,13 @@ public class SimpleFuture<T, E extends Exception> implements Future<T, E> {
     
     private final Class<E> catchable;
     
-    public SimpleFuture(Call<T,E> task, Class<E> catchable) {
+    public Futuroid(Call<T,E> task, Class<E> catchable) {
         this.task = task;
         this.notified = this;
         this.catchable = catchable;
     }
     
-    public SimpleFuture(Call<T,E> task,
+    public Futuroid(Call<T,E> task,
             Class<E> catchable, Object notifier) {
         
         this.task = task;

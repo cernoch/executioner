@@ -41,31 +41,31 @@ public class ThreadPoolTest {
         assertTrue(pool.working());
         
         try {
-            SimpleFuture<Integer,InterruptedException> f1 = pool.submit(
+            Futuroid<Integer,InterruptedException> f1 = pool.submit(
                     InterruptedException.class, new WaitAndReturn(200L, 0));
-            SimpleFuture<Integer,InterruptedException> f2 = pool.submit(
+            Futuroid<Integer,InterruptedException> f2 = pool.submit(
                     InterruptedException.class, new WaitAndReturn(200L, 1));
-            SimpleFuture<Integer,InterruptedException> f3 = pool.submit(
+            Futuroid<Integer,InterruptedException> f3 = pool.submit(
                     InterruptedException.class, new WaitAndReturn(200L, 2));
-            SimpleFuture<Integer,InterruptedException> f4 = pool.submit(
+            Futuroid<Integer,InterruptedException> f4 = pool.submit(
                     InterruptedException.class, new WaitAndReturn(200L, 3));
 
             Thread.sleep(100L);
             
-            assertEquals(SimpleFuture.Status.RUNNING, f1.status());
-            assertEquals(SimpleFuture.Status.RUNNING, f2.status());
-            assertEquals(SimpleFuture.Status.QUEUED,  f3.status());
-            assertEquals(SimpleFuture.Status.QUEUED,  f4.status());
+            assertEquals(Futuroid.Status.RUNNING, f1.status());
+            assertEquals(Futuroid.Status.RUNNING, f2.status());
+            assertEquals(Futuroid.Status.QUEUED,  f3.status());
+            assertEquals(Futuroid.Status.QUEUED,  f4.status());
 
             assertEquals((Integer) 0, f1.get());
             assertEquals((Integer) 1, f2.get());
             assertEquals((Integer) 2, f3.get());
             assertEquals((Integer) 3, f4.get());
 
-            assertEquals(SimpleFuture.Status.DONE, f1.status());
-            assertEquals(SimpleFuture.Status.DONE, f2.status());
-            assertEquals(SimpleFuture.Status.DONE, f3.status());
-            assertEquals(SimpleFuture.Status.DONE, f4.status());
+            assertEquals(Futuroid.Status.DONE, f1.status());
+            assertEquals(Futuroid.Status.DONE, f2.status());
+            assertEquals(Futuroid.Status.DONE, f3.status());
+            assertEquals(Futuroid.Status.DONE, f4.status());
             
         } finally {
             assertTrue(pool.working());
@@ -95,7 +95,7 @@ public class ThreadPoolTest {
         ThreadPool pool = new ThreadPool(1, true);
         try {
             WaitAndReturn war = new WaitAndReturn(200L, 1);
-            SimpleFuture<Integer,InterruptedException> fut =
+            Futuroid<Integer,InterruptedException> fut =
                     pool.submit(InterruptedException.class, war);
             
             Thread.sleep(100L);

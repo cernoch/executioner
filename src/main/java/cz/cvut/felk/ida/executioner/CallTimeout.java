@@ -75,7 +75,7 @@ public class CallTimeout<T> implements Callable<T> {
     @Override
     public T call() throws InterruptedException, TimeoutException, Exception {
         
-        SimpleFuture<? extends T, Exception> future = pool.submit(child);
+        Futuroid<? extends T, Exception> future = pool.submit(child);
         try {
             return future.get(timeOut);
         } finally {

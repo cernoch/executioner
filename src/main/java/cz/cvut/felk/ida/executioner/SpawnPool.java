@@ -46,84 +46,126 @@ public class SpawnPool {
     }        
     
     public SpawnPool(int threads, boolean fixed,
-            ThreadFactory workerFactory, ThreadFactory checkerFactory) {
+            ThreadFactory workerFactory,
+            ThreadFactory checkerFactory) {
         
         workers = new ThreadPool(threads, fixed, workerFactory);
         checkers = new ThreadPool(0, false, checkerFactory);
     }
 
-    public <T, E extends Exception> SpawnFuture<T, E> first(
-            Class<E> catchable, long timeOut,
+    private <T, E extends Exception> Futuroidy<T, E> submit(
+            List<Futuroid<T,E>> sink, Futuroidy<T,E> fee, Class<E> catchable,
+            Call<Void, InterruptedException> checker,
             Collection<? extends Call<T,E>> tasks) {
-        
-        // List of futures for all sub-tasks
-        List<SimpleFuture<T,E>> sub = new ArrayList<>();
-        
-        // Future that returns the first successful sub-task
-        SpawnFuture<T,E> ff = new SpawnFuture<>(sub, timeOut);
         
         // Submit the subtasks and register their futures
         for (Call<T,E> task : tasks) {
-            sub.add(workers.submit(new SimpleFuture<>(task, catchable, ff)));
+            Futuroid<T,E> foid = new Futuroid<>(task, catchable, fee);
+            workers.submit(foid);
+            sink.add(foid);
         }
         
         // Start monitoring the subtasks and return the first one
-        checkers.submit(InterruptedException.class, ff.new PreferFirst());
+        checkers.submit(InterruptedException.class, checker);
 
-        return ff;
+        return fee;
+    }
+        
+    public <T, E extends Exception> Futuroidy<T, E> first(
+            Class<E> catchable, long timeOut,
+            Collection<? extends Call<T,E>> tasks) {
+        
+        List<Futuroid<T,E>> sub = new ArrayList<>();
+        Futuroidy<T,E> fee = new Futuroidy<>(sub, timeOut);
+        submit(sub, fee, catchable, fee.new PreferFirst(), tasks);
+        return fee;
     }
             
-    public <T, E extends Exception> SpawnFuture<T, E> first(
+    public <T, E extends Exception> Futuroidy<T, E> first(
             Class<E> catchable, long timeOut, Call<T,E>... tasks) {
         return first(catchable, timeOut, Arrays.asList(tasks));
     }
     
-    public <T> SpawnFuture<T,Exception> firstCall(long timeOut,
+    public <T> Futurexy<T> firstCall(long timeOut,
             Iterable<? extends Callable<T>> tasks) {
-        return first(Exception.class, timeOut, LegacyCall.convert(tasks));
+        
+        List<Futuroid<T,Exception>> sub = new ArrayList<>();
+        Futurexy<T> fee = new Futurexy<>(sub, timeOut);
+        
+        submit(sub, fee, Exception.class,
+                fee.new PreferFirst(),
+                LegacyCall.convert(tasks));
+        return fee;
     }
     
-    public <T> SpawnFuture<T, Exception> firstCall(long timeOut,
-            Callable<T>... tasks) {
+    public <T> Futurexy<T> firstCall(long timeOut, Callable<T>... tasks) {
         return firstCall(timeOut, Arrays.asList(tasks));
     }
     
-    public SpawnFuture<Void,RuntimeException> firstRun(
-            long timeOut, Collection<? extends Runnable> tasks) {
-        return first(RuntimeException.class, timeOut, LegacyRun.convert(tasks));
+    public Futuruny firstRun(long timeOut,
+            Collection<? extends Runnable> tasks) {
+
+        List<Futuroid<Void,RuntimeException>> sub = new ArrayList<>();
+        Futuruny fee = new Futuruny(sub, timeOut);
+        
+        submit(sub, fee, RuntimeException.class,
+                fee.new PreferFirst(),
+                LegacyRun.convert(tasks));
+        return fee;
     }
     
-    public SpawnFuture<Void,RuntimeException> firstRun(
-            long timeOut, Runnable... tasks) {
+    public Futuruny firstRun(long timeOut, Runnable... tasks) {
         return firstRun(timeOut, Arrays.asList(tasks));
     }
     
-    public <T, E extends Exception> SpawnFuture<T, E> oneof(
+    public <T, E extends Exception> Futuroidy<T, E> oneof(
             Class<E> catchable, long timeOut,
             Collection<? extends Call<T,E>> tasks) {
         
-        // List of futures for all sub-tasks
-        List<SimpleFuture<T,E>> sub = new ArrayList<>();
-        
-        // Future that returns the first successful sub-task
-        SpawnFuture<T,E> ff = new SpawnFuture<>(sub, timeOut);
-        
-        // Submit the subtasks and register their futures
-        for (Call<T,E> task : tasks) {
-            sub.add(workers.submit(new SimpleFuture<>(task, catchable, ff)));
-        }
-        
-        // Start monitoring the subtasks and return the first one
-        checkers.submit(InterruptedException.class, ff.new PreferFastest());
-
-        return ff;
+        List<Futuroid<T,E>> sub = new ArrayList<>();
+        Futuroidy<T,E> fee = new Futuroidy<>(sub, timeOut);
+        submit(sub, fee, catchable, fee.new PreferFastest(), tasks);
+        return fee;
     }
 
-    public <T, E extends Exception> SpawnFuture<T, E> oneof(
+    public <T, E extends Exception> Futuroidy<T, E> oneof(
             Class<E> catchable, long timeOut, Call<T,E>... tasks) {
         return oneof(catchable, timeOut, Arrays.asList(tasks));
     }
     
+    
+    public <T> Futurexy<T> oneofCall(long timeOut,
+            Iterable<? extends Callable<T>> tasks) {
+        
+        List<Futuroid<T,Exception>> sub = new ArrayList<>();
+        Futurexy<T> fee = new Futurexy<>(sub, timeOut);
+        
+        submit(sub, fee, Exception.class,
+                fee.new PreferFastest(),
+                LegacyCall.convert(tasks));
+        return fee;
+    }
+    
+    public <T> Futurexy<T> oneofCall(long timeOut, Callable<T>... tasks) {
+        return firstCall(timeOut, Arrays.asList(tasks));
+    }
+    
+    public Futuruny oneofRun(long timeOut,
+            Collection<? extends Runnable> tasks) {
+
+        List<Futuroid<Void,RuntimeException>> sub = new ArrayList<>();
+        Futuruny fee = new Futuruny(sub, timeOut);
+        
+        submit(sub, fee, RuntimeException.class,
+                fee.new PreferFastest(),
+                LegacyRun.convert(tasks));
+        return fee;
+    }
+    
+    public Futuruny oneofRun(long timeOut, Runnable... tasks) {
+        return firstRun(timeOut, Arrays.asList(tasks));
+    }
+
     public void shutdown() {
         checkers.shutdown();
         workers.shutdown();

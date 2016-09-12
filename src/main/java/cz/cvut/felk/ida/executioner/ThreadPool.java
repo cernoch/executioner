@@ -24,6 +24,7 @@
 package cz.cvut.felk.ida.executioner;
 
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
@@ -60,9 +61,9 @@ public class ThreadPool {
         }
     }
     
-    private final Queue<SimpleFuture<?,?>> queue = new LinkedList<>();
+    private final Queue<Futuroid<?,?>> queue = new LinkedList<>();
     
-    private synchronized SimpleFuture<?, ?> dequeue(long timeout) {
+    private synchronized Futuroid<?, ?> dequeue(long timeout) {
         try {
             while (queue.isEmpty()) {
                 wait(timeout);
@@ -79,8 +80,7 @@ public class ThreadPool {
         return queue.poll();
     }
 
-    synchronized <T,E extends Exception> SimpleFuture<T,E>
-            submit(SimpleFuture<T,E> future) {
+    synchronized <T,E extends Exception> void submit(Futuroid<T,E> future) {
 
         queue.add(future);
         
@@ -91,18 +91,25 @@ public class ThreadPool {
         } else {
             notify();
         }
-        
-        return future;
     }
         
-    public <T,E extends Exception> SimpleFuture<T,E>
+    public <T,E extends Exception> Futuroid<T,E>
             submit(Class<E> catchable, Call<T,E> task) {
-        return submit(new SimpleFuture<>(task, catchable));
+        Futuroid<T,E> fut = new Futuroid<>(task, catchable);
+        submit(fut);
+        return fut;
     }
 
-    public synchronized <T> SimpleFuture<T,Exception>
-            submit(java.util.concurrent.Callable<T> task) {
-        return submit(Exception.class, new LegacyCall<>(task));
+    public synchronized <T> Futurex<T> submit(Callable<T> task) {
+        Futurex<T> fut = new Futurex<>(new LegacyCall<>(task));
+        submit(fut);
+        return fut;
+    }
+            
+    public synchronized Futurun<Void> submit(Runnable task) {
+        Futurun<Void> fut = new Futurun<>(new LegacyRun(task));
+        submit(fut);
+        return fut;
     }
             
     private boolean exitting = false;
@@ -144,7 +151,7 @@ public class ThreadPool {
         public void run() {
             while (!exitting) {
 
-                SimpleFuture<?, ?> task;
+                Futuroid<?, ?> task;
 
                 synchronized (ThreadPool.this) {
                     try {
