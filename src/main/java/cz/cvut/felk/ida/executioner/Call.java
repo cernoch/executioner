@@ -23,13 +23,16 @@
  */
 package cz.cvut.felk.ida.executioner;
 
+import java.util.concurrent.Callable;
+
 /**
  *
  * @author Radek
  * @param <T>
  * @param <E>
  */
-public interface Call<T, E extends Exception> {
+public interface Call<T, E extends Exception> extends Callable<T> {
     
+    @Override
     T call() throws E;
 }
