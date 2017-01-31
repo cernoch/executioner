@@ -2,22 +2,48 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>cz.cvut.felk.ida.executioner</groupId>
+  <groupId>io.github.cernoch</groupId>
   <artifactId>executioner</artifactId>
-  <version>2.1</version>
-  <name>Executioner with timeouts</name>
+  <version>3.0.0</version>
+  <name>${project.groupId}:${project.artifactId}</name>
   <inceptionYear>2014</inceptionYear>
-  <description>Parallel execution tools and stack manipulators</description>
+  <description>Parallel execution tools. On top of java.util.concurrent 
+        this provides checked exception handling (forget ExecutionException),
+        and stack manipulators for comfortable debugging. Also we provide
+        routines that simulate execution on CPUs with arbitrary number of
+        cores, which is handy for benchmarking.</description>
+  <url>https://github.com/cernoch/executioner</url>
 
   <properties>
     <netbeans.hint.license>mit</netbeans.hint.license>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
+  <licenses><license>
+    <name>MIT License</name>
+    <url>http://www.opensource.org/licenses/mit-license.php</url>
+  </license></licenses>
+  
+  <developers>
+    <developer>
+      <name>Radomír Černoch</name>
+      <email>radomir.cernoch@gmail.com</email>
+      <organization>Czech Technical University in Prague</organization>
+      <organizationUrl>http://www.cvut.cz</organizationUrl>
+    </developer>
+  </developers>
+  
+  <scm>
+    <connection>scm:git:git://github.com/cernoch/executioner.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com:cernoch/executioner.git</developerConnection>
+    <url>https://github.com/cernoch/executioner</url>
+  </scm>
+  
   <distributionManagement>
-    <repository><id>ida-ssh</id><!-- IDA CVUT repository -->
-      <url>scpexe://maven@ida.fel.cvut.cz/srv/maven/data</url>
-    </repository>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
   </distributionManagement>
   
   <repositories>
@@ -63,8 +89,8 @@
         <configuration>
           <encoding>${project.build.sourceEncoding}</encoding>
           <docfilessubdirs>true</docfilessubdirs>
-          <windowtitle><![CDATA[CyberCalc API v${project.version}]]></windowtitle>
-          <doctitle><![CDATA[CyberCalc API v${project.version}]]></doctitle>
+          <windowtitle><![CDATA[Executioner v${project.version}]]></windowtitle>
+          <doctitle><![CDATA[Executioner v${project.version}]]></doctitle>
         </configuration>
         <executions><execution>
           <goals><goal>jar</goal></goals>
@@ -76,19 +102,21 @@
         <artifactId>maven-gpg-plugin</artifactId>
         <version>1.6</version>
         <executions><execution>
-          <phase>deploy</phase>
+          <phase>verify</phase>
           <goals><goal>sign</goal></goals>
         </execution></executions>
       </plugin>
 
-      <plugin><!-- Redeploy signed -->
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <version>2.7</version>
-        <executions><execution>
-          <phase>deploy</phase>
-          <goals><goal>deploy</goal></goals>
-        </execution></executions>
+      <plugin><!-- Deploy to Sonatype -->
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <version>1.6.7</version>
+        <extensions>true</extensions>
+        <configuration>
+          <serverId>ossrh</serverId>
+          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+          <autoReleaseAfterClose>true</autoReleaseAfterClose>
+        </configuration>
       </plugin>
     </plugins>
 
