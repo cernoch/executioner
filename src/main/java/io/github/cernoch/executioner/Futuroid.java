@@ -204,6 +204,24 @@ public class Futuroid<T, E extends Exception> implements Future<T, E> {
             }
         }
     }
+
+    @Override
+    public void interrupt() {
+        synchronized (notified) {
+            switch (status) {
+                case QUEUED:
+                    this.timing = 0;
+                    this.thrown = new InterruptedException();
+                    this.status = Status.DONE;
+                    notified.notifyAll();
+                    break;
+                    
+                case RUNNING:
+                    worker.interrupt();
+                    break;
+            }
+        }
+    }
     
     @Override
     public void cancel() {

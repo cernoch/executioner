@@ -127,6 +127,13 @@ public class Futuroidy<T, E extends Exception> implements Future<T, E> {
     }
 
     @Override
+    public void interrupt() {
+        for (Futuroid<T, E> future : tasks) {
+            future.interrupt();
+        }
+    }
+    
+    @Override
     public synchronized void cancel() {
         for (Futuroid<T, E> future : tasks) {
             future.cancel();

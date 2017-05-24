@@ -23,6 +23,8 @@
  */
 package io.github.cernoch.executioner;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -140,6 +142,43 @@ public class ThreadPoolTest {
         ThreadPool pool = new ThreadPool(1, true);
         try {
             pool.submit(MyException.class, new ThrowMyException()).get();
+        } finally {
+            pool.shutdown();
+        }
+    }
+    
+    @Test
+    public void interruptWaitsForGraceful() throws InterruptedException {
+        
+        Call<Integer,RuntimeException> elapsedSeconds
+                = new Call<Integer, RuntimeException>() {
+                    
+            @Override
+            public Integer call() throws RuntimeException {
+                int i = 0;
+                while (true) {
+                    try {
+                        Thread.sleep(1000L);
+                        i++;
+                    } catch (InterruptedException ex) {
+                        return i;
+                    }
+                }
+            }
+        };
+        
+        ThreadPool pool = new ThreadPool(1, true);
+        try {
+            Futuroid<Integer, RuntimeException> fut = pool.submit(
+                    RuntimeException.class, elapsedSeconds);
+            try {
+                fut.get(1500L);
+            } catch (TimeoutException ex) {
+                fut.interrupt();
+            }
+            
+            assertEquals(Integer.valueOf(1), fut.get());
+            
         } finally {
             pool.shutdown();
         }

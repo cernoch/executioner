@@ -4,7 +4,7 @@
 
   <groupId>io.github.cernoch</groupId>
   <artifactId>executioner</artifactId>
-  <version>3.0.0</version>
+  <version>3.1.0</version>
   <name>${project.groupId}:${project.artifactId}</name>
   <inceptionYear>2014</inceptionYear>
   <description>Parallel execution tools. On top of java.util.concurrent 

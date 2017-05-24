@@ -64,6 +64,21 @@ public interface Future<T, E extends Exception> {
     T get(long timeOut) throws InterruptedException, TimeoutException, E;
 
     /**
+     * Send an {@linkplain Thread#interrupt()} to the current working thread.
+     * 
+     * <p>If the computation has already finished, this has no effect.</p>
+     * 
+     * <p>If the computation has not started yet,
+     * all current and future calls for {@link #get()} or
+     * {@link #get(long)} will result in {@link InterruptedException}.</p>
+     * 
+     * <p>Otherwise the thread, which performs the computation
+     * will receive the {@link Thread#interrupt()} signal.
+     * The computation will continue.</p>
+     */
+    void interrupt();
+    
+    /**
      * Cancel the computation currently in progress.
      * 
      * <p>If the computation has already finished, this has no effect.</p>
