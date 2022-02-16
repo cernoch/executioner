@@ -27,6 +27,10 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static java.util.logging.Level.*;
 
 /**
  * Thread pool holds a number of threads for asynchronous calculation.
@@ -289,19 +293,34 @@ try {
 
                 synchronized (ThreadPool.this) {
                     try {
+                        L.log(FINEST, "Worker #" + hashCode()
+                                + " is about to wait for a task.");
                         waiting++;
+                        L.log(FINE, "Worker #" + hashCode()
+                                + " sees " + waiting + " workers.");
                         task = dequeue(zombie ? 0 : 3000L);
+                        L.log(FINER, "Worker #" + hashCode()
+                                + " got task: " + task);
                     } finally {
                         waiting--;
+                        L.log(FINEST, "Worker #" + hashCode()
+                                + " stopped waiting.");
                     }
                 }
 
                 if (task != null) {
+                    L.log(FINE, "Worker #" + hashCode()
+                            + " starts executing: " + task);
                     task.execute();
                 } else {
+                    L.log(FINE, "Worker #" + hashCode()
+                            + " is exiting.");
                     return;
                 }
             }
         }
     }
+
+    private static final Logger L = Logger.getLogger(
+            ThreadPool.class.getName());
 }
