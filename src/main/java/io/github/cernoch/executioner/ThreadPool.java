@@ -266,7 +266,16 @@ try {
      * Number of waiting worker threads.
      */
     private int waiting = 0;
-    
+
+    /**
+     * Number of threads waiting for a new task.
+     *
+     * @return non-negative number
+     */
+    public int waiting() {
+        return waiting;
+    }
+
     /**
      * Worker thread is cached and performs the actual computation.
      */

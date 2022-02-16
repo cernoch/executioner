@@ -23,12 +23,9 @@
  */
 package io.github.cernoch.executioner;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Tests for the {@link ThreadPool} class.
@@ -182,5 +179,43 @@ public class ThreadPoolTest {
         } finally {
             pool.shutdown();
         }
+    }
+
+    @Test(timeout = 5000L)
+    public void numberOfWaitingThreadsInFixedPool() throws InterruptedException {
+        ThreadPool pool = new ThreadPool(4, true);
+
+        // Let the workers be initialized
+        Thread.sleep(500L);
+        assertEquals(4, pool.waiting());
+
+        pool.submit(() -> {
+            Thread.sleep(500L);
+            return null;
+        });
+        Thread.sleep(100L);
+        assertEquals(3, pool.waiting());
+
+        Thread.sleep(700L);
+        assertEquals(4, pool.waiting());
+    }
+
+
+    @Test(timeout = 5000L)
+    public void numberOfWaitingThreadsInCachedPool() throws InterruptedException {
+        ThreadPool pool = new ThreadPool(0, false);
+        assertEquals(0, pool.waiting());
+
+        pool.submit(() -> {
+            Thread.sleep(500L);
+            return null;
+        });
+        Thread.sleep(100L);
+        // 1 worker should be working
+        assertEquals(0, pool.waiting());
+
+        Thread.sleep(700L);
+        // Thread should be cached
+        assertEquals(1, pool.waiting());
     }
 }
